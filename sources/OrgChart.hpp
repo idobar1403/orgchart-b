@@ -25,6 +25,7 @@ namespace ariel
         {
             return this->root == nullptr;
         }
+        // search the nodes in the chart
         Node *search_node(Node *node, T data)
         {
             if (data == node->data)
@@ -35,6 +36,7 @@ namespace ariel
             queue<Node *> q;
             Node *curr = this->root;
             s.push(curr);
+            // iterate over all the nodes
             while (!s.empty())
             {
                 curr = s.top();
@@ -49,6 +51,7 @@ namespace ariel
                 }
             }
             Node *a = nullptr;
+            // check if the node is exist in the nodes of the chart by comparing the data
             while (!q.empty())
             {
                 a = q.front();
@@ -75,42 +78,32 @@ namespace ariel
         }
         ~OrgChart()
         {
-            stack<Node *> st1;
-            stack<Node *> st2;
-            if (this->root->childs.size() > 0)
+            // level order in order to destruct the nodes
+            if (root != nullptr)
             {
-                for (size_t i = this->root->childs.size() - 1; i > 0; i--)
+                stack<Node *> st;
+                queue<Node *> que;
+                queue.push(root);
+                Node *curr = nullptr;
+                // take every node and push his childs to the queue and
+                // every pop from the queue push the node to the stack
+                while (!que.empty())
                 {
-                    st1.push(this->root->childs.at(i));
-                    st2.push(this->root->childs.at(i));
-                }
-                st1.push(this->root->childs.at(0));
-                st2.push(this->root->childs.at(0));
-            }
-            while (!st1.empty())
-            {
-                Node *curr_node = st1.top();
-                st1.pop();
-                if (curr_node->childs.size() > 0)
-                {
-                    for (size_t i = curr_node->childs.size() - 1; i > 0; i--)
+                    curr = que.front();
+                    st.push(curr);
+                    que.pop();
+                    for (auto it = curr->childs.rbegin(); it != curr->childs.rend(); ++it)
                     {
-                        st1.push(curr_node->childs.at(i));
-                        st2.push(curr_node->childs.at(i));
+                        que.push(*it);
                     }
-                    st1.push(curr_node->childs.at(0));
-                    st2.push(curr_node->childs.at(0));
+                }
+                while (!st.empty())
+                {
+                    curr = st.top();
+                    st.pop();
+                    delete curr;
                 }
             }
-            while (!st2.empty())
-            {
-                Node *curr = st2.top();
-                st2.pop();
-                cout << "delete: " << curr->data << endl;
-                delete curr;
-            }
-            cout << "delete root " << endl;
-            delete this->root;
         }
 
         OrgChart(OrgChart<T> &other) noexcept
@@ -132,6 +125,7 @@ namespace ariel
             this->root = other.root;
             other.root = nullptr;
         }
+        // add root node
         OrgChart<T> &add_root(const T &data)
         {
             if (this->root == nullptr)
@@ -144,6 +138,7 @@ namespace ariel
             }
             return *this;
         }
+        // add nodes to the chart
         OrgChart<T> &add_sub(const T &data1, const T &data2)
         {
             if (this->root == nullptr)
@@ -154,31 +149,14 @@ namespace ariel
             {
                 throw std::invalid_argument("can't add empty data to chart");
             }
+            // search if the first name exist
             Node *node1 = this->search_node(this->root, data1);
-            // Node *node2 = this->search_node(this->root, data2);
+            // error if not
             if (node1 == nullptr)
             {
                 throw std::invalid_argument("can't add this nodes");
             }
             node1->childs.push_back(new Node(data2));
-
-            // if (node2 == nullptr)
-            // {
-            //     node1->childs.push_back(new Node(data2));
-            // }
-            // else
-            // {
-            //     Node *check = this->search_node(node2, data1);
-            //     if (check == nullptr)
-            //     {
-            //         node1->childs.push_back(node2);
-            //     }
-            //     else
-            //     {
-            //         throw std::invalid_argument("can't add higher node to be sub node");
-            //     }
-            // }
-
             return *this;
         }
         friend ostream &operator<<(ostream &os, const OrgChart &chart)
@@ -196,25 +174,31 @@ namespace ariel
             order_type order;
 
         public:
-            iterator(order_type order, Node *node) : order(order), curr_node(node)
+            iterator(order_type order = order_type::LevelOrder, Node *node = nullptr) : order(order), curr_node(node)
             {
                 if (this->curr_node != nullptr)
                 {
-                    if (!this->curr_node->childs.empty())
+                    // level order
+                    if (this->order == order_type::LevelOrder)
                     {
-
-                        if (this->order == order_type::LevelOrder)
+                        if (!this->curr_node->childs.empty())
                         {
-                            for (size_t i = 0; i < this->curr_node->childs.size(); i++)
+                            if (!this->curr_node->childs.empty())
                             {
-                                this->que.push(this->curr_node->childs.at(i));
+                                // iterate over the childs
+                                for (auto &child : this->curr_node->childs)
+                                {
+                                    this->que.push(child);
+                                }
                             }
                         }
                     }
+                    // pre order
                     else if (this->order == order_type::PreOrder)
                     {
                         if (this->curr_node->childs.size() > 0)
                         {
+                            // iterate over the childs and push them to stack in order to get the reverse order of every row
                             for (size_t i = this->curr_node->childs.size() - 1; i > 0; i--)
                             {
                                 this->st.push(this->curr_node->childs.at(i));
@@ -222,17 +206,20 @@ namespace ariel
                             this->st.push(this->curr_node->childs.at(0));
                         }
                     }
+                    // reverse level order
                     else
                     {
                         Node *n = this->curr_node;
                         this->que.push(n);
                         while (!this->que.empty())
                         {
+                            // push the current node to the stack
                             n = this->que.front();
                             this->que.pop();
                             this->st.push(n);
                             if (n->childs.size() > 0)
                             {
+                                // push the current node childs to the queue
                                 for (size_t i = n->childs.size() - 1; i > 0; i--)
                                 {
                                     this->que.push(n->childs.at(i));
@@ -244,123 +231,149 @@ namespace ariel
                         st.pop();
                     }
                 }
-               
             }
             iterator &operator++()
             {
-                if (this->order == order_type::LevelOrder)
+                if (!this->st.empty() || !this->que.empty())
                 {
-                    if (this->que.empty())
+                    if (this->order == order_type::LevelOrder)
                     {
-                        this->curr_node = nullptr;
-                        return *this;
-                    }
-                    this->curr_node = this->que.front();
-                    this->que.pop();
-                    for (size_t i = 0; i < this->curr_node->childs.size(); i++)
-                    {
-                        this->que.push(this->curr_node->childs.at(i));
-                    }
-                }
-                else if (this->order == order_type::PreOrder)
-                {
-                    if (this->st.empty())
-                    {
-                        this->curr_node = nullptr;
-                        return *this;
-                    }
-                    this->curr_node = this->st.top();
-                    this->st.pop();
-                    if (this->curr_node->childs.size() > 0)
-                    {
-                        for (size_t i = this->curr_node->childs.size() - 1; i > 0; i--)
+                        // just go to the next childs and put the other childs to the queue
+                        if (this->que.empty())
                         {
-                            this->st.push(this->curr_node->childs.at(i));
+                            this->curr_node = nullptr;
+                            return *this;
                         }
-                        this->st.push(this->curr_node->childs.at(0));
+                        this->curr_node = this->que.front();
+                        this->que.pop();
+                        if (this->curr_node != nullptr)
+                        {
+                            if (!this->curr_node->childs.empty())
+                            {
+                                for (auto &child : this->curr_node->childs)
+                                {
+                                    this->que.push(child);
+                                }
+                            }
+                        }
                     }
-                }
-                else
-                {
-                    if (this->st.empty())
+                    else if (this->order == order_type::PreOrder)
                     {
-                        this->curr_node = nullptr;
-                        return *this;
+                        if (this->st.empty())
+                        {
+                            this->curr_node = nullptr;
+                            return *this;
+                        }
+                        // go to the next child and put the childs in to the stack
+                        this->curr_node = this->st.top();
+                        this->st.pop();
+                        if (this->curr_node->childs.size() > 0)
+                        {
+                            for (size_t i = this->curr_node->childs.size() - 1; i > 0; i--)
+                            {
+                                this->st.push(this->curr_node->childs.at(i));
+                            }
+                            this->st.push(this->curr_node->childs.at(0));
+                        }
                     }
-                    this->curr_node = this->st.top();
-                    this->st.pop();
+                    else
+                    {
+                        if (this->st.empty())
+                        {
+                            this->curr_node = nullptr;
+                            return *this;
+                        }
+                        // just pop the last node from the stack
+                        this->curr_node = this->st.top();
+                        this->st.pop();
+                    }
+                    return *this;
                 }
+                // if there are no nodes to iterate to
+                this->curr_node = nullptr;
                 return *this;
             }
             T &operator*() const
             {
+                // get the data of the node
                 return curr_node->data;
             }
             T *operator->() const
             {
+                // get pointer to the node
                 return &(curr_node->data);
             }
             bool operator==(const iterator &other)
             {
+                // compare two nodes
                 return this->curr_node == other.curr_node;
             }
             bool operator!=(const iterator &other)
             {
+                // compare two nodes
                 return this->curr_node != other.curr_node;
             }
         };
         iterator begin_level_order()
         {
-            if(this->root==nullptr){
+            if (this->root == nullptr)
+            {
                 throw std::invalid_argument("empty chart");
             }
-            return iterator(order_type::LevelOrder, this->root);
+            return iterator{order_type::LevelOrder, this->root};
         }
         iterator end_level_order()
         {
-            if(this->root==nullptr){
+            if (this->root == nullptr)
+            {
                 throw std::invalid_argument("empty chart");
             }
-            return iterator(order_type::LevelOrder, nullptr);
+            return iterator{order_type::LevelOrder, nullptr};
         }
         iterator begin_reverse_order()
         {
-            if(this->root==nullptr){
+            if (this->root == nullptr)
+            {
                 throw std::invalid_argument("empty chart");
             }
-            return iterator(order_type::ReverseOrder, this->root);
+            return iterator{order_type::ReverseOrder, this->root};
         }
         iterator reverse_order()
         {
-            if(this->root==nullptr){
+            if (this->root == nullptr)
+            {
                 throw std::invalid_argument("empty chart");
             }
-            return iterator(order_type::ReverseOrder, nullptr);
+            return iterator{order_type::ReverseOrder, nullptr};
         }
         iterator begin_preorder()
         {
-            if(this->root==nullptr){
+            if (this->root == nullptr)
+            {
                 throw std::invalid_argument("empty chart");
             }
-            return iterator(order_type::PreOrder, this->root);
+            return iterator{order_type::PreOrder, this->root};
         }
         iterator end_preorder()
         {
-            if(this->root==nullptr){
+            if (this->root == nullptr)
+            {
                 throw std::invalid_argument("empty chart");
             }
-            return iterator(order_type::PreOrder, nullptr);
+            return iterator{order_type::PreOrder, nullptr};
         }
         iterator begin()
         {
-            if(this->root==nullptr){
+            if (this->root == nullptr)
+            {
                 throw std::invalid_argument("empty chart");
             }
             return iterator(order_type::LevelOrder, this->root);
         }
         iterator end()
         {
-            if(this->root==nullptr){
+            if (this->root == nullptr)
+            {
                 throw std::invalid_argument("empty chart");
             }
             return iterator(order_type::LevelOrder, nullptr);
