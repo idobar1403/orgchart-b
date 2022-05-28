@@ -83,7 +83,7 @@ namespace ariel
             {
                 stack<Node *> st;
                 queue<Node *> que;
-                queue.push(root);
+                que.push(root);
                 Node *curr = nullptr;
                 // take every node and push his childs to the queue and
                 // every pop from the queue push the node to the stack
