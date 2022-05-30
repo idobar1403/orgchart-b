@@ -64,6 +64,24 @@ namespace ariel
 
             return nullptr;
         }
+        static string print_tree(Node *node, bool last, string childs)
+        {
+            string ans;
+            ans += childs + " └──" + node->data + "\n";
+            if (last)
+            {
+                childs += "   ";
+            }
+            else
+            {
+                childs += "-|";
+            }
+            for (size_t i = 0; i < node->childs.size(); i++)
+            {
+                ans += print_tree(node->childs.at(i), i == node->childs.size() - 1, childs);
+            }
+            return ans;
+        }
 
     public:
         enum order_type
@@ -128,6 +146,17 @@ namespace ariel
         // add root node
         OrgChart<T> &add_root(const T &data)
         {
+            if(data.length()==0|| data == " "){
+                 throw std::invalid_argument("bad char");
+            }
+            // check for good input in the root data
+            for (size_t i = 0; i < data.length(); i++)
+            {
+                if (isprint(data.at(i)) == 0)
+                {
+                    throw std::invalid_argument("bad char");
+                }
+            }
             if (this->root == nullptr)
             {
                 this->root = new Node(data);
@@ -141,6 +170,25 @@ namespace ariel
         // add nodes to the chart
         OrgChart<T> &add_sub(const T &data1, const T &data2)
         {
+            if(data1.length()==0||data2.length()==0||data1==" " || data2 == " "){
+                 throw std::invalid_argument("bad char");
+            }
+            // check if the chars in data1 are good 
+            for (size_t i = 0; i < data1.length(); i++)
+            {
+                if (isprint(data1.at(i)) == 0)
+                {
+                    throw std::invalid_argument("bad char");
+                }
+            }
+            // check if the chars in data2 are good 
+            for (size_t i = 0; i < data2.length(); i++)
+            {
+                if (isprint(data2.at(i)) == 0)
+                {
+                    throw std::invalid_argument("bad char");
+                }
+            }
             if (this->root == nullptr)
             {
                 throw std::invalid_argument("OrgChart as no root");
@@ -156,12 +204,13 @@ namespace ariel
             {
                 throw std::invalid_argument("can't add this nodes");
             }
+            // create the new node2 and add him as child to node1
             node1->childs.push_back(new Node(data2));
             return *this;
         }
         friend ostream &operator<<(ostream &os, const OrgChart &chart)
         {
-            os << "chart" << endl;
+            os << print_tree(chart.root, true, "");
             return os;
         }
 
@@ -248,6 +297,7 @@ namespace ariel
                         this->que.pop();
                         if (this->curr_node != nullptr)
                         {
+                            // iterator over the current childs of the current node 
                             if (!this->curr_node->childs.empty())
                             {
                                 for (auto &child : this->curr_node->childs)
@@ -269,6 +319,7 @@ namespace ariel
                         this->st.pop();
                         if (this->curr_node->childs.size() > 0)
                         {
+                            // for the preorder insert the childs in reverse order
                             for (size_t i = this->curr_node->childs.size() - 1; i > 0; i--)
                             {
                                 this->st.push(this->curr_node->childs.at(i));
